@@ -13,48 +13,6 @@ def logdet(A):
     return 2 * np.sum(np.log(np.diag(cholesky(A, lower=True))))
 
 
-def is_pos_def(A):
-    if isdiag(A):
-        if np.all(np.diag(A) > 0):
-            return True
-        else:
-            return False
-    elif np.array_equal(A, A.T):
-        try:
-            np.linalg.cholesky(A, lower=True)
-            return True
-        except np.linalg.LinAlgError:
-            return False
-    else:
-        return False
-
-
-def cov_regularize(cova):
-    # Regularize covariance matrices if the Cholesky factorization is not positive definite
-    dim = cova.shape[0]
-    reg = np.eye(dim) * 1e-14
-
-    # Perform Cholesky decomposition
-    indicator = is_pos_def(cova)
-    count = 0
-    maxCount = 100
-
-    # Check whether the factorization is positive definite
-    # If not, add regularization matrix to the covariance matrix
-    while not indicator and count < maxCount:
-        cova += reg
-        indicator = is_pos_def(cova)
-        count += 1
-
-    # throw an exception if positive-definiteness cannot be achieved
-    if count == maxCount:
-        raise Exception('cov_regularize:TooManyIterations', 'Could not regularize the covariance matrix')
-        # or print a warning message
-        print('cov_regularize:TooManyIterations', 'Could not regularize the covariance matrix')
-
-    return cova
-
-
 def loggausspdf(xp, x0, P0):
     # Calculate log of d-dimensional Gaussian prob. density evaluated at xp
     # with mean x0 and covariance P0

@@ -30,16 +30,16 @@ class Planar(nn.Module):
     """
     def __init__(self, dim, nonlinearity=torch.tanh):
         super().__init__()
+        self.dim = dim
         self.h = nonlinearity
         self.w = nn.Parameter(torch.Tensor(dim))
         self.u = nn.Parameter(torch.Tensor(dim))
         self.b = nn.Parameter(torch.Tensor(1))
-        self.reset_parameters(dim)
 
-    def reset_parameters(self, dim):
-        init.uniform_(self.w, -math.sqrt(1/dim), math.sqrt(1/dim))
-        init.uniform_(self.u, -math.sqrt(1/dim), math.sqrt(1/dim))
-        init.uniform_(self.b, -math.sqrt(1/dim), math.sqrt(1/dim))
+    def reset_parameters(self):
+        init.uniform_(self.w, -math.sqrt(1/self.dim), math.sqrt(1/self.dim))
+        init.uniform_(self.u, -math.sqrt(1/self.dim), math.sqrt(1/self.dim))
+        init.uniform_(self.b, -math.sqrt(1/self.dim), math.sqrt(1/self.dim))
 
     def forward(self, x):
         """
@@ -48,6 +48,7 @@ class Planar(nn.Module):
         Returns
         -------
         """
+        x = x.float()
         if self.h in (F.elu, F.leaky_relu):
             u = self.u
         elif self.h == torch.tanh:
@@ -75,14 +76,15 @@ class Radial(nn.Module):
     """
     def __init__(self, dim):
         super().__init__()
+        self.dim = dim
         self.x0 = nn.Parameter(torch.Tensor(dim))
         self.log_alpha = nn.Parameter(torch.Tensor(1))
         self.beta = nn.Parameter(torch.Tensor(1))
 
-    def reset_parameters(self, dim):
-        init.uniform_(self.x0, -math.sqrt(1/dim), math.sqrt(1/dim))
-        init.uniform_(self.log_alpha, -math.sqrt(1/dim), math.sqrt(1/dim))
-        init.uniform_(self.beta, -math.sqrt(1/dim), math.sqrt(1/dim))
+    def reset_parameters(self):
+        init.uniform_(self.x0, -math.sqrt(1/self.dim), math.sqrt(1/self.dim))
+        init.uniform_(self.log_alpha, -math.sqrt(1/self.dim), math.sqrt(1/self.dim))
+        init.uniform_(self.beta, -math.sqrt(1/self.dim), math.sqrt(1/self.dim))
 
     def forward(self, x):
         """
@@ -121,7 +123,7 @@ class RealNVP(nn.Module):
 
     [Dinh et. al. 2017]
     """
-    def __init__(self, dim, hidden_dim=16, base_network=FCNN):
+    def __init__(self, dim, hidden_dim=8, base_network=FCNN):
         super().__init__()
         self.dim = dim
         self.t1 = base_network(dim // 2, dim // 2, hidden_dim)
@@ -180,7 +182,7 @@ class MAF(nn.Module):
 
     [Papamakarios et al. 2018]
     """
-    def __init__(self, dim, hidden_dim = 8, base_network=FCNN):
+    def __init__(self, dim, hidden_dim=8, base_network=FCNN):
         super().__init__()
         self.dim = dim
         self.layers = nn.ModuleList()

@@ -1,8 +1,10 @@
 import numpy as np
 import torch
+import torch.nn as nn
 from torch.linalg import cholesky
 from flows import *
 from utils_torch import *
+import torch.distributions as dist
 
 
 def isdiag_t(P):
@@ -15,48 +17,6 @@ def logdet_t(A):
         'A should be a square matrix of double or single class.'
     L = torch.linalg.cholesky(A)
     return 2 * torch.sum(torch.log(torch.diag(L)))
-
-
-def is_pos_def_t(A):
-    if isdiag_t(A):
-        if torch.all(torch.diag(A) > 0):
-            return True
-        else:
-            return False
-    elif torch.equal(A, A.T):
-        try:
-            cholesky(A)
-            return True
-        except torch.linalg.LinAlgError:
-            return False
-    else:
-        return False
-
-
-def cov_regularize_t(cova):
-    # Regularize covariance matrices if the Cholesky factorization is not positive definite
-    dim = cova.shape[0]
-    reg = torch.eye(dim) * 1e-14
-
-    # Perform Cholesky decomposition
-    indicator = is_pos_def_t(cova)
-    count = 0
-    maxCount = 100
-
-    # Check whether the factorization is positive definite
-    # If not, add regularization matrix to the covariance matrix
-    while not indicator and count < maxCount:
-        cova += reg
-        indicator = is_pos_def_t(cova)
-        count += 1
-
-    # Throw an exception if positive-definiteness cannot be achieved
-    if count == maxCount:
-        raise Exception('cov_regularize:TooManyIterations', 'Could not regularize the covariance matrix')
-        # or print a warning message
-        print('cov_regularize:TooManyIterations', 'Could not regularize the covariance matrix')
-
-    return cova
 
 
 def loggausspdf_t(xp, x0, P0):
@@ -141,7 +101,7 @@ def logGMMpdf_t(xp, mu, Sigma, alpha=None):
 
 class NormalizingFlowModel(nn.Module):
 
-    def __init__(self, args):
+    def __init__(self, args, current_prop):
         super().__init__()
         self.device = args.device
         self.flows = nn.ModuleList([RealNVP(dim=args.dim) for _ in range(args.n_layer)]).to(self.device)
@@ -150,9 +110,8 @@ class NormalizingFlowModel(nn.Module):
             f.zero_initialization()
 
         self.args = args
-        # self.current_prop = current_prop
-        # self.mu_ = nn.Parameter(torch.from_numpy(current_prop.mean), requires_grad=True).to(self.device)
-        # self.std_param_ = nn.Parameter(torch.from_numpy(np.log(np.exp(self.args.sigma_prop)-1) * np.ones_like(current_prop.mean)), requires_grad=True).to(self.device)
+        self.current_prop = current_prop
+        self.mu_ = nn.Parameter(torch.from_numpy(current_prop.mean), requires_grad=True).to(self.device)
 
     def forward_(self, x):
         m, _ = x.shape
@@ -162,12 +121,8 @@ class NormalizingFlowModel(nn.Module):
             log_det += ld
         return x, log_det
 
-    def forward(self, samples, current_prop):
-        # std = torch.log(1.0 + torch.exp(self.std_param_))
-        # cov = torch.stack([torch.diag(torch.square(std[i, :])) for i in range(self.args.N)], dim=2)
-
-        # samples = samples + self.mu_.unsqueeze(1)
-        # samples = samples + torch.from_numpy(self.current_prop.mean[:, None, :])
+    def forward(self, samples):
+        samples = samples + self.mu_.unsqueeze(1)
         samples_ = samples.reshape([-1, self.args.dim])
 
         samples_nf, log_det = self.forward_(samples_)
@@ -178,11 +133,12 @@ class NormalizingFlowModel(nn.Module):
         if self.args.weighting == 'Standard':
             log_proposal = torch.zeros([self.args.N, self.args.K])
             for n in range(self.args.N):
-                log_proposal[n, :] = loggausspdf_t(samples[n, :, :], torch.from_numpy(current_prop.mean[n, :]), torch.from_numpy(self.current_prop.cov[:, :, n]))
+                log_proposal[n, :] = loggausspdf_t(samples[n, :, :], self.mu_[n, :], torch.from_numpy(self.current_prop.cov[:, :, n]) )
 
         elif self.args.weighting == 'DM':
-            log_proposal = logGMMpdf_t(samples_, torch.from_numpy(current_prop.mean),
-                                       torch.from_numpy(current_prop.cov)).reshape([self.args.N, self.args.K])
+            log_proposal = logGMMpdf_t(samples_, self.mu_,
+                                       torch.from_numpy(self.current_prop.cov)).reshape([self.args.N, self.args.K])
 
         log_proposal = log_proposal - log_det
         return samples_nf.reshape(samples.size()), log_target - log_proposal
+

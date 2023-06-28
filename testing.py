@@ -3,8 +3,92 @@ import numpy as np
 
 from utils import *
 from utils_torch import *
-# from scipy.linalg import lu, cholesky, solve, solve_triangular, norm, sqrtm
+from scipy.linalg import lu, cholesky, solve, solve_triangular, norm, sqrtm
 from scipy.stats import multivariate_normal
+
+import torch, time
+
+
+def is_pos_def(A):
+    if isdiag(A):
+        if np.all(np.diag(A) > 0):
+            return True
+        else:
+            return False
+    elif np.array_equal(A, A.T):
+        try:
+            cholesky(A)
+            return True
+        except np.linalg.LinAlgError:
+            return False
+    else:
+        return False
+
+
+def cov_regularize(cova):
+    # Regularize covariance matrices if the Cholesky factorization is not positive definite
+    dim = cova.shape[0]
+    reg = np.eye(dim) * 1e-14
+
+    # Perform Cholesky decomposition
+    indicator = is_pos_def(cova)
+    count = 0
+    maxCount = 100
+
+    # Check whether the factorization is positive definite
+    # If not, add regularization matrix to the covariance matrix
+    while (not indicator) and count < maxCount:
+        cova += reg
+        indicator = is_pos_def(cova)
+        count += 1
+
+    # throw an exception if positive-definiteness cannot be achieved
+    if count == maxCount:
+        raise Exception('cov_regularize:TooManyIterations', 'Could not regularize the covariance matrix')
+
+    return cova
+
+
+def is_pos_def_t(A):
+    if isdiag_t(A):
+        if torch.all(torch.diag(A) > 0):
+            return True
+        else:
+            return False
+    elif torch.equal(A, A.T):
+        try:
+            cholesky(A)
+            return True
+        except:
+            return False
+    else:
+        return False
+
+
+def cov_regularize_t(cova):
+    # Regularize covariance matrices if the Cholesky factorization is not positive definite
+    dim = cova.shape[0]
+    reg = torch.eye(dim) * 1e-14
+
+    # Perform Cholesky decomposition
+    indicator = is_pos_def_t(cova)
+    count = 0
+    maxCount = 100
+
+    # Check whether the factorization is positive definite
+    # If not, add regularization matrix to the covariance matrix
+    while not indicator and count < maxCount:
+        cova += reg
+        indicator = is_pos_def_t(cova)
+        count += 1
+
+    # Throw an exception if positive-definiteness cannot be achieved
+    if count == maxCount:
+        raise Exception('cov_regularize:TooManyIterations', 'Could not regularize the covariance matrix')
+        # or print a warning message
+        print('cov_regularize:TooManyIterations', 'Could not regularize the covariance matrix')
+
+    return cova
 
 
 def posterior_latent_GMM(xp, mu, Sigma, alpha=None):
@@ -46,9 +130,8 @@ def posterior_latent_GMM(xp, mu, Sigma, alpha=None):
     return np.squeeze(posterior_latent)
 
 
-
-dim = 2
-nsample = 1
+dim = 50
+nsample = 1000
 
 x = np.random.rand(nsample, dim)
 
@@ -57,34 +140,38 @@ cov_sqrt = np.random.rand(dim, dim)
 cov = np.dot(cov_sqrt, cov_sqrt.T) + np.eye(dim)
 cov = np.tile(cov[:, :, None], [1, 1, nsample])
 
-print('-------------')
-print(loggausspdf(x, mu, cov[:, :, 0]))
-print('-------------')
-print(loggausspdf(x, mu, cov))
-print('-------------')
-var = multivariate_normal(mean=mu, cov=cov[:, :, 0])
-print(np.log(var.pdf(x)))
-print('-------------')
-print(loggausspdf_t(torch.from_numpy(x), torch.from_numpy(mu), torch.from_numpy(cov)))
+# print('-------------')
+# print(loggausspdf(x, mu, cov[:, :, 0]))
+# print('-------------')
+# print(loggausspdf(x, mu, cov))
+# print('-------------')
+# var = multivariate_normal(mean=mu, cov=cov[:, :, 0])
+# print(np.log(var.pdf(x)))
+# print('-------------')
+# print(loggausspdf_t(torch.from_numpy(x), torch.from_numpy(mu), torch.from_numpy(cov)))
+# print('-------------')
+# print(log_multivariate_gaussian(torch.from_numpy(x), torch.from_numpy(mu), torch.from_numpy(cov[:, :, 0])))
 
-#
-#
-# print(cov[:, :, 0])
-# print(scipy.linalg.cholesky(cov[:, :, 0], lower=True))
-#
-#
-# x = np.random.rand(5, dim)
-# mu = np.random.rand(3, dim)
-# Sigma = np.tile(cov[:, :, [0]], [1, 1, 3])
-#
-# print(logGMMpdf(x, mu, Sigma))
-# print(logGMMpdf_t(torch.from_numpy(x), torch.from_numpy(mu), torch.from_numpy(Sigma)))
-#
-# print(cov.shape)
-#
-# for k in range(cov.shape[-1]):
-#     print(scipy.linalg.cholesky(cov[:, :, k], lower=True))
-#     print('duck')
-#     print(torch.linalg.cholesky(torch.from_numpy(cov[:, :, k])))
-#     print('tuck')
-#     print('-----------------------')
+print('-------------')
+x = torch.from_numpy(x)
+mu = torch.from_numpy(mu)
+cov = torch.from_numpy(cov)
+start = time.time()
+
+for i in range(5):
+    z1 = loggausspdf_t(x, mu, cov)
+    # z2 = log_multivariate_gaussian(x, mu, cov[:, :, 0])
+    # print(torch.sum(torch.abs(z1-z2)).item())
+
+print(time.time()-start)
+
+
+print('-------------')
+start = time.time()
+
+for i in range(5000):
+    # z1 = np.linalg.inv(np.eye(2))
+    z2 = np.linalg.solve(np.eye(2), np.eye(2))
+    # print(torch.sum(torch.abs(z1-z2)).item())
+
+print(time.time()-start)

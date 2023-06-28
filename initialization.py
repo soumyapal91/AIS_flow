@@ -39,8 +39,7 @@ def Initialization(args):
     args.log_target = log_target
 
     if args.algorithm == 'SL-PMC':
-        args.grad_log_target = grad_log_target
-        args.neg_hess_inv_log_target = neg_hess_inv_log_target
+        args.grad_neg_hess_inv_log_target = grad_neg_hess_inv_log_target
 
     if args.example == 'Gaussian':
         args.target_mu = np.zeros(args.dim)

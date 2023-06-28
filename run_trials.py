@@ -16,18 +16,18 @@ parser.add_argument('--J', type=int, default=500, help='no. iteration')
 parser.add_argument('--K', type=int, default=20, help='no. samples/proposal')
 parser.add_argument('--N', type=int, default=50, help='no. proposals')
 
-parser.add_argument('--num_trials', type=int, default=10, help='no. random trials')
+parser.add_argument('--num_trials', type=int, default=5, help='no. random trials')
 parser.add_argument('--seed_init', type=int, default=123, help='initial seed')
 
-parser.add_argument("--weighting", type=str, default='DM', choices=['DM', 'Standard'])
+parser.add_argument("--weighting", type=str, default='DM', choices=['Standard', 'Standard'])
 parser.add_argument("--resampling", type=str, default='local', choices=['local', 'global'])
-parser.add_argument("--adaptation", type=str, default='Langevin', choices=['Resample', 'Langevin', 'VAPIS', 'NF'])
+parser.add_argument("--adaptation", type=str, default='NF', choices=['Resample', 'Langevin', 'VAPIS', 'NF'])
 
 parser.add_argument('--step_by_step', type=bool, default=False)
 
 parser.add_argument("--gpu", type=int, default=-1)
 parser.add_argument("--n_layer", type=int, default=1, help='number of normalizing flow layers')
-parser.add_argument('--lr_nf', type=float, default=0.01, help='learning rate for NF-PMC only, try [0.01, 0.05, 0.1]')
+parser.add_argument('--lr_nf', type=float, default=0.05, help='learning rate for NF-PMC only, try [0.01, 0.05, 0.1]')
 
 parser.add_argument('--lr_vi', type=float, default=0.05, help='learning rate for VAPIS only, try [0.01, 0.05, 0.1]')
 
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     for trial in range(args.num_trials):
         args.seed = args.seeds_all[trial]
         print('-------------------------------------------------------------------------------------------------------')
-        print('Trial:' + str(trial) + ', algorithm: ' + args.algorithm + ', J=' + str(args.J) + ', K=' + str(args.K) + ', N=' + str(args.N) + ', sigma_prop=' + str(args.sigma_prop))
+        print('Trial:' + str(trial) + ', example: ' + args.example + ', dimension: ' + str(args.dim) +', algorithm: ' + args.algorithm + ', J=' + str(args.J) + ', K=' + str(args.K) + ', N=' + str(args.N) + ', sigma_prop=' + str(args.sigma_prop))
 
         output, args = AIS_main(args)
 
