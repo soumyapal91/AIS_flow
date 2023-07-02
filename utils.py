@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.linalg import cholesky, solve_triangular
+from scipy.linalg import cholesky, solve, solve_triangular
 
 
 def isdiag(P):
@@ -11,6 +11,22 @@ def logdet(A):
     assert isinstance(A, np.ndarray) and A.ndim == 2 and A.shape[0] == A.shape[1], \
         'A should be a square matrix of double or single class.'
     return 2 * np.sum(np.log(np.diag(cholesky(A, lower=True))))
+
+
+def is_pos_def(A):
+    if isdiag(A):
+        if np.all(np.diag(A) > 0):
+            return True
+        else:
+            return False
+    elif np.array_equal(A, A.T):
+        try:
+            cholesky(A)
+            return True
+        except np.linalg.LinAlgError:
+            return False
+    else:
+        return False
 
 
 def loggausspdf(xp, x0, P0):
@@ -58,6 +74,13 @@ def loggausspdf(xp, x0, P0):
             g[i] = -(chisq / 2) - twopi_factor - 0.5 * logdet(P0[:, :, i])
 
     return np.squeeze(g)
+
+
+def loggauss_grad(xp, mu, cov_inv):
+    if isdiag(cov_inv):
+        return -(xp - mu) * np.diag(cov_inv)
+    else:
+        return -np.dot(cov_inv, (xp - mu))
 
 
 def logGMMpdf(xp, mu, Sigma, alpha=None):
@@ -136,6 +159,75 @@ def MSE(x_est, x_true):
     x_est = np.squeeze(x_est)
     x_true = np.squeeze(x_true)
     return np.mean((x_est - x_true) ** 2)
+
+
+def loggausspdf_target(xp, x0, P0, P0inv, logdetP0):
+    if xp.ndim == 1:
+        xp = xp[None, :]
+
+    N, d = xp.shape
+
+    twopi_factor = 0.5 * d * np.log(2 * np.pi)
+
+    if x0.ndim == 1:
+        y = xp - np.tile(x0, (N, 1))
+    else:
+        y = xp - x0
+
+    if isdiag(P0):
+        chisq = np.sum((y ** 2) / np.tile(np.diag(P0).reshape(1, -1), (N, 1)), axis=1)
+    else:
+        alpha = np.dot(P0inv, y.T)
+        chisq = np.sum(alpha.T * y, axis=1)
+
+    g = -(chisq / 2) - twopi_factor - 0.5 * logdetP0
+    return np.squeeze(g)
+
+
+def logGMMpdf_target(xp, mu, Sigma, alpha, Sigma_inv, Sigma_logdet):
+    if xp.ndim == 1:
+        xp = xp[None, :]
+
+    N = xp.shape[0]
+    k = mu.shape[0]
+
+    alpha = alpha / np.sum(alpha)
+
+    logScaledComp = np.zeros((k, N))
+
+    for i in range(k):
+        logScaledComp[i, :] = loggausspdf_target(xp, mu[i], Sigma[:, :, i], Sigma_inv[:, :, i], Sigma_logdet[i]) + np.log(alpha[i])
+
+    max_term = np.max(logScaledComp, axis=0)
+
+    logpdf = max_term + np.log(np.sum(np.exp(logScaledComp - np.tile(max_term, (k, 1))), axis=0))
+
+    return np.squeeze(logpdf)
+
+
+def posterior_latent_GMM(xp, mu, Sigma, alpha, Sigma_inv, Sigma_logdet):
+    if xp.ndim == 1:
+        xp = xp[None, :]
+
+    N = xp.shape[0]
+    k = mu.shape[0]
+
+    alpha = alpha / np.sum(alpha)
+
+    logScaledComp = np.zeros((k, N))
+
+    for i in range(k):
+        logScaledComp[i, :] = loggausspdf_target(xp, mu[i], Sigma[:, :, i], Sigma_inv[:, :, i], Sigma_logdet[i]) + np.log(alpha[i])
+
+    max_term = np.max(logScaledComp, axis=0)
+
+    logGMMpdf = max_term + np.log(np.sum(np.exp(logScaledComp - np.tile(max_term, (k, 1))), axis=0))
+
+    term = logScaledComp - np.tile(logGMMpdf, (k, 1))
+    posterior_latent = np.exp(term - np.max(term)).T
+    posterior_latent = posterior_latent / np.sum(posterior_latent, axis=1)[:, None]
+
+    return np.squeeze(posterior_latent)
 
 
 

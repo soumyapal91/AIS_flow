@@ -24,8 +24,11 @@ class Output:
 
     def sample_n_weight_nf(self, current_prop, args):
         # sampling
-        samples = np.array([np.dot(scipy.linalg.cholesky(current_prop.cov[:, :, n], lower=True),
-                                np.random.normal(size=[args.dim, args.K])).T for n in range(args.N)])
+
+        if args.learn_var:
+            samples = np.random.normal(size=[args.N, args.K, args.dim])
+        else:
+            samples = args.sigma_prop * np.random.normal(size=[args.N, args.K, args.dim])
 
         samples = torch.from_numpy(samples).to(args.device)
 
@@ -37,7 +40,7 @@ class Output:
         return samples, log_w
 
     def adaptation_step_nf(self, particles, logW):
-        loss = -1.0 * torch.mean(logW)
+        loss = -torch.mean(logW)
         loss.backward()
         self.optimizer.step()
 
@@ -49,7 +52,7 @@ class Output:
 
 def AIS_main(args):
 
-    args = Initialization(args)
+    args = init_alg(args)
     current_prop = CurrentProp(args)
     output = Output(args, current_prop)
 
@@ -81,8 +84,14 @@ def AIS_main(args):
             elif args.adaptation == 'Langevin':
                 current_prop = langevin_adapt(samples, log_w, current_prop, args)
 
+            elif args.adaptation == 'Newton':
+                current_prop = newton_adapt(samples, log_w, current_prop, args)
+
             elif args.adaptation == 'VAPIS':
                 current_prop, G_mu = vi_adapt(samples, log_w, current_prop, args, G_mu)
+
+            elif args.adaptation == 'HMC':
+                current_prop = hmc_adapt(current_prop, args)
 
         output.particles.append(samples)
         output.logW.append(log_w)
