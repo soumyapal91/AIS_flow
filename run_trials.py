@@ -27,12 +27,14 @@ parser.add_argument('--N', type=int, default=100, help='no. proposals')
 parser.add_argument("--gpu", type=int, default=-1)
 parser.add_argument("--n_layer_nf", type=int, default=1, help='number of normalizing flow layers')
 parser.add_argument('--lr_nf', type=float, default=0.05, help='learning rate for NF-PMC only, try [0.01, 0.05, 0.1]')
+parser.add_argument('--step_nf', type=int, default=500, help='step for decay in learning rate for NF-PMC only')
 parser.add_argument('--learn_var', type=bool, default=False, help='whether to use learnable cov matrix in NF')
+parser.add_argument("--loss", type=str, default='KL', choices=['KL', 'KLrev', 'div2'])
 
 parser.add_argument('--lr_vi', type=float, default=0.05, help='learning rate for VAPIS only, try [0.01, 0.05, 0.1]')
 
 parser.add_argument('--L_hmc', type=int, default=10, help='no. leapfrog steps for HAIS only')
-parser.add_argument('--eps_hmc', type=float, default=0.005, help='step-size of leapfrog for HAIS only, try [0.001, 0.005, 0.01]')
+parser.add_argument('--eps_hmc', type=float, default=0.005, help='step-size of leapfrog for HAIS only]')
 
 args = parser.parse_args()
 

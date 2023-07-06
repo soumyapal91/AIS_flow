@@ -19,10 +19,11 @@ class Output:
         if args.algorithm == 'NF-PMC':
             self.nf_model = NormalizingFlowModel(args, current_prop)
             self.optimizer = torch.optim.RMSprop(self.nf_model.parameters(), lr=args.lr_nf, alpha=0.9, eps=1e-8)
+            self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=args.step_nf, gamma=0.1)
             if args.use_cuda:
                 self.nf_model.to(args.device)
 
-    def sample_n_weight_nf(self, current_prop, args):
+    def sample_n_weight_nf(self, args):
         # sampling
 
         if args.learn_var:
@@ -35,14 +36,29 @@ class Output:
         self.optimizer.zero_grad()
         self.nf_model.train()
 
-        samples, log_w = self.nf_model(samples)
+        samples, log_target, log_proposal = self.nf_model(samples)
 
-        return samples, log_w
+        return samples, log_target, log_proposal
 
-    def adaptation_step_nf(self, particles, logW):
-        loss = -torch.mean(logW)
+    def adaptation_step_nf(self, args, particles, log_target, log_proposal):
+
+        if args.loss == 'KL':
+            loss = -torch.mean(log_target - log_proposal)
+        elif args.loss == 'KLrev':
+            log_w_ = (log_target - log_proposal).detach()
+            weight = torch.exp(log_w_ - torch.max(log_w_))
+            weight = weight / torch.sum(weight)
+            loss = -torch.mean(weight * log_proposal)
+        elif args.loss == 'div2':
+            log_w_ = 2 * (log_target - log_proposal).detach()
+            weight = torch.exp(log_w_ - torch.max(log_w_))
+            weight = weight / torch.sum(weight)
+            loss = -torch.mean(weight * log_proposal)
+
         loss.backward()
         self.optimizer.step()
+        self.scheduler.step()
+        logW = log_target - log_proposal
 
         particles = particles.cpu().detach().numpy()
         logW = logW.cpu().detach().numpy()
@@ -51,7 +67,6 @@ class Output:
 
 
 def AIS_main(args):
-
     args = init_alg(args)
     current_prop = CurrentProp(args)
     output = Output(args, current_prop)
@@ -65,10 +80,10 @@ def AIS_main(args):
 
         if args.algorithm == 'NF-PMC':
             # sampling and weighting
-            samples, log_w = output.sample_n_weight_nf(current_prop, args)
+            samples, log_target_, log_proposal_ = output.sample_n_weight_nf(args)
 
             # adaptation
-            samples, log_w = output.adaptation_step_nf(samples, log_w)
+            samples, log_w = output.adaptation_step_nf(args, samples, log_target_, log_proposal_)
 
         else:
             # sampling

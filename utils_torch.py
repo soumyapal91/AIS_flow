@@ -198,5 +198,5 @@ class NormalizingFlowModel(nn.Module):
                 log_proposal = logGMMpdf_t(samples_, self.mu_, torch.from_numpy(self.current_prop.cov)).reshape([self.args.N, self.args.K])
 
         log_proposal = log_proposal - log_det
-        return samples_nf.reshape(samples.size()), log_target - log_proposal
+        return samples_nf.reshape(samples.size()), log_target, log_proposal
 
