@@ -19,7 +19,7 @@ class Output:
         if args.algorithm == 'NF-PMC':
             self.nf_model = NormalizingFlowModel(args, current_prop)
             self.optimizer = torch.optim.RMSprop(self.nf_model.parameters(), lr=args.lr_nf, alpha=0.9, eps=1e-8)
-            self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=args.step_nf, gamma=0.1)
+            self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=args.step_nf, gamma=args.gamma)
             if args.use_cuda:
                 self.nf_model.to(args.device)
 
@@ -67,6 +67,7 @@ class Output:
 
 
 def AIS_main(args):
+    args = init_params(args)
     args = init_alg(args)
     current_prop = CurrentProp(args)
     output = Output(args, current_prop)

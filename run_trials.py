@@ -8,33 +8,34 @@ from results import *
 from ais import *
 
 parser = argparse.ArgumentParser(description='AIS')
-parser.add_argument('--step_by_step', type=bool, default=True, help='set True, shows final error only if False')
-parser.add_argument('--num_trials', type=int, default=1, help='no. random trials')
+parser.add_argument('--step_by_step', type=bool, default=False, help='set True, shows final error only if False')
 parser.add_argument('--seed_init', type=int, default=123, help='initial seed')
+parser.add_argument('--num_trials', type=int, default=1, help='no. random trials')
 
-parser.add_argument("--example", type=str, default='Banana', choices=['Gaussian', 'GMM', 'Banana', 'Logistic'])
+parser.add_argument("--example", type=str, default='Logistic', choices=['Gaussian', 'Banana', 'GMM', 'Logistic'])
 parser.add_argument('--dim', type=int, default=200, help='dimension of target distribution')
 parser.add_argument('--sigma_prop', type=float, default=1.0, help='std. dev of proposals, try [1.0, 2.0, 3.0]')
 
 parser.add_argument("--weighting", type=str, default='DM', choices=['DM', 'Standard'])
 parser.add_argument("--resampling", type=str, default='local', choices=['local', 'global'])
-parser.add_argument("--adaptation", type=str, default='NF', choices=['Resample', 'Langevin', 'Newton', 'HMC', 'VAPIS', 'NF'])
+parser.add_argument("--adaptation", type=str, default='HMC', choices=['Resample', 'Langevin', 'Newton', 'HMC', 'VAPIS', 'NF'])
 
-parser.add_argument('--J', type=int, default=500, help='no. iterations')
+parser.add_argument('--J', type=int, default=50, help='no. iterations')
 parser.add_argument('--K', type=int, default=10, help='no. samples/proposal')
 parser.add_argument('--N', type=int, default=100, help='no. proposals')
 
 parser.add_argument("--gpu", type=int, default=-1)
 parser.add_argument("--n_layer_nf", type=int, default=1, help='number of normalizing flow layers')
 parser.add_argument('--lr_nf', type=float, default=0.05, help='learning rate for NF-PMC only, try [0.01, 0.05, 0.1]')
-parser.add_argument('--step_nf', type=int, default=500, help='step for decay in learning rate for NF-PMC only')
+parser.add_argument('--step_nf', type=int, default=100, help='step for decay in learning rate for NF-PMC only')
+parser.add_argument('--gamma', type=float, default=0.1, help='factor of learning rate decay for NF-PMC only')
 parser.add_argument('--learn_var', type=bool, default=False, help='whether to use learnable cov matrix in NF')
 parser.add_argument("--loss", type=str, default='KL', choices=['KL', 'KLrev', 'div2'])
 
-parser.add_argument('--lr_vi', type=float, default=0.05, help='learning rate for VAPIS only, try [0.01, 0.05, 0.1]')
+parser.add_argument('--lr_vi', type=float, default=0.5, help='learning rate for VAPIS only, try [0.01, 0.05, 0.1]')
 
-parser.add_argument('--L_hmc', type=int, default=10, help='no. leapfrog steps for HAIS only')
-parser.add_argument('--eps_hmc', type=float, default=0.005, help='step-size of leapfrog for HAIS only]')
+parser.add_argument('--L_hmc', type=int, default=1, help='no. leapfrog steps for HAIS only')
+parser.add_argument('--eps_hmc', type=float, default=0.25, help='step-size of leapfrog for HAIS only]')
 
 args = parser.parse_args()
 
@@ -43,9 +44,9 @@ if args.adaptation == 'Resample' and args.resampling == 'global' and args.weight
     args.J = args.J * args.K
     args.K = 1
 elif args.adaptation == 'Resample' and args.resampling == 'global' and args.weighting == 'DM':
-    args.algorithm = 'DM-PMC(global)'
+    args.algorithm = 'GR-PMC'
 elif args.adaptation == 'Resample' and args.resampling == 'local' and args.weighting == 'DM':
-    args.algorithm = 'DM-PMC(local)'
+    args.algorithm = 'LR-PMC'
 elif args.adaptation == 'Langevin' and args.resampling == 'local' and args.weighting == 'DM':
     args.algorithm = 'SL-PMC'
 elif args.adaptation == 'Newton' and args.resampling == 'local' and args.weighting == 'DM':
@@ -60,12 +61,12 @@ else:
     print('Not valid arguments!!!')
     exit(0)
 
-args = init_params(args)
+random.seed(args.seed_init)
+np.random.seed(args.seed_init)
+args.seeds_all = [int(x) for x in np.random.choice(np.arange(1e6), args.num_trials, replace=False)]
+print('Seeds for all trials: ' + str(args.seeds_all))
 
 if __name__ == "__main__":
-    # import cProfile, pstats
-    # profiler = cProfile.Profile()
-    # profiler.enable()
 
     results = list()
 
@@ -113,7 +114,7 @@ if __name__ == "__main__":
             print('MSE of mean estimate: ' + str(err.mse_mu[-1]))
             print('MSE of 2nd momemnt estimate: ' + str(err.mse_m2[-1]))
 
-    # profiler.disable()
-    # stats = pstats.Stats(profiler).sort_stats('cumtime')
-    # stats.strip_dirs()
-    # stats.print_stats()
+        elif args.example == 'Logistic':
+            print('rMSE of weight estimate: ' + str(err.mse_mu[-1]))
+            print('Log-likelihood of test data: ' + str(err.ll_test[-1]))
+

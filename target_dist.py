@@ -20,6 +20,16 @@ def log_target_t(xp, args):
     elif args.example == 'GMM':
         return logGMMpdf_target_t(xp, torch.from_numpy(args.target_mu), torch.from_numpy(args.target_cov), torch.from_numpy(args.target_alpha), torch.from_numpy(args.target_cov_inv), torch.from_numpy(args.target_cov_logdet))
 
+    elif args.example == 'Logistic':
+        log_prior = loggausspdf_target_t(xp, torch.zeros_like(xp), torch.from_numpy(args.prior_cov), torch.from_numpy(args.prior_cov_inv), torch.tensor(args.prior_cov_logdet))
+
+        prob = torch.sigmoid(torch.mm(torch.from_numpy(args.X), torch.transpose(xp, 0, 1)))
+        prob = torch.clamp(prob, 1e-14, 1 - 1e-14)
+
+        labels = torch.tile(torch.from_numpy(args.Y[None, :].T), [1, xp.shape[0]])
+        ll = torch.sum(labels * torch.log(prob) + (1 - labels) * torch.log(1 - prob), dim=0)
+        return log_prior + ll
+
 
 def log_target(xp, args):
     if xp.ndim == 1:
@@ -35,6 +45,15 @@ def log_target(xp, args):
 
     elif args.example == 'GMM':
         return logGMMpdf_target(xp, args.target_mu, args.target_cov, args.target_alpha, args.target_cov_inv, args.target_cov_logdet)
+
+    elif args.example == 'Logistic':
+        log_prior = loggausspdf_target(xp, np.zeros_like(xp), args.prior_cov, args.prior_cov_inv, args.prior_cov_logdet)
+
+        prob = 1.0 / (1 + np.exp(-np.dot(args.X, xp.T)))
+        prob = np.clip(prob, 1e-14, 1-1e-14)
+        labels = np.tile(args.Y[None, :].T, [1, xp.shape[0]])
+        ll = np.sum(labels * np.log(prob) + (1 - labels) * np.log(1 - prob), axis=0)
+        return log_prior + ll
 
 
 def grad_neg_hess_inv_log_target(xp, args):
@@ -90,6 +109,27 @@ def grad_neg_hess_inv_log_target(xp, args):
         else:
             neg_hess_inv = np.inf * np.eye(args.dim)
 
+    elif args.example == 'Logistic':
+        grad_log_prior = loggauss_grad(xp, np.zeros_like(xp), args.prior_cov_inv)
+
+        prob = 1.0 / (1 + np.exp(-np.dot(args.X, xp)))
+        prob = np.clip(prob, 1e-14, 1-1e-14)
+
+        grad_ll = np.sum((args.Y - prob)[:, None] * args.X, axis=0)
+        grad_ = grad_log_prior + grad_ll
+
+        term1 = args.prior_cov_inv
+        term2 = np.dot(args.X.T, (prob * (1-prob))[:, None] * args.X)
+        neg_hess_ = term1 + term2
+
+        if is_pos_def(neg_hess_):
+            try:
+                neg_hess_inv = np.linalg.inv(neg_hess_)
+            except:
+                neg_hess_inv = np.inf * np.eye(args.dim)
+        else:
+            neg_hess_inv = np.inf * np.eye(args.dim)
+
     return grad_, neg_hess_inv
 
 
@@ -110,5 +150,14 @@ def grad_log_target(xp, args):
         alpha_posterior = posterior_latent_GMM(xp, args.target_mu, args.target_cov, args.target_alpha, args.target_cov_inv, args.target_cov_logdet)
 
         grad_ = np.dot(np.array([loggauss_grad(xp, args.target_mu[i, :], args.target_cov_inv[:, :, i]) for i in range(args.target_nc)]).T, alpha_posterior)
+
+    elif args.example == 'Logistic':
+        grad_log_prior = loggauss_grad(xp, np.zeros_like(xp), args.prior_cov_inv)
+
+        prob = 1.0 / (1 + np.exp(-np.dot(args.X, xp)))
+        prob = np.clip(prob, 1e-14, 1-1e-14)
+
+        grad_ll = np.sum((args.Y - prob)[:, None] * args.X, axis=0)
+        grad_ = grad_log_prior + grad_ll
 
     return grad_

@@ -73,32 +73,33 @@ def cov_regularize_t(cova):
         print('cov_regularize:TooManyIterations', 'Could not regularize the covariance matrix')
 
     return cova
+#
+# import cProfile
+# from scipy.stats import invwishart
+#
+# cov = invwishart.rvs(df=200, scale=np.eye(200), size=1) + 2 * np.eye(200)
+#
+# start = time.time()
+#
+# for i in range(1000):
+#     L = torch.linalg.inv(torch.from_numpy(cov))
+#
+# print(time.time()-start)
+#
+# dim = 10
+# nsample = 12
+# x = np.random.rand(nsample, dim)
+# mu = np.random.rand(dim)
+# cov = invwishart.rvs(df=dim, scale=np.eye(dim), size=1) + 2 * np.eye(dim)
+#
+# print('----------------------------')
+# print(loggausspdf(x, mu, cov))
+# print(loggausspdf_target(x, mu, cov, np.linalg.inv(cov), logdet(cov)))
+# print(loggausspdf_t(torch.from_numpy(x), torch.from_numpy(mu), torch.from_numpy(cov)))
+# print(loggausspdf_target_t(torch.from_numpy(x), torch.from_numpy(mu), torch.from_numpy(cov),  torch.linalg.inv(torch.from_numpy(cov)), logdet_t(torch.from_numpy(cov))))
+#
+# yo = logdet(cov)
+#
+# # print(logdet_t(torch.from_numpy(cov)))
+# print(torch.tensor(yo))
 
-import cProfile
-from scipy.stats import invwishart
-
-cov = invwishart.rvs(df=200, scale=np.eye(200), size=1) + 2 * np.eye(200)
-
-start = time.time()
-
-for i in range(1000):
-    L = torch.linalg.inv(torch.from_numpy(cov))
-
-print(time.time()-start)
-
-dim = 10
-nsample = 12
-x = np.random.rand(nsample, dim)
-mu = np.random.rand(dim)
-cov = invwishart.rvs(df=dim, scale=np.eye(dim), size=1) + 2 * np.eye(dim)
-
-print('----------------------------')
-print(loggausspdf(x, mu, cov))
-print(loggausspdf_target(x, mu, cov, np.linalg.inv(cov), logdet(cov)))
-print(loggausspdf_t(torch.from_numpy(x), torch.from_numpy(mu), torch.from_numpy(cov)))
-print(loggausspdf_target_t(torch.from_numpy(x), torch.from_numpy(mu), torch.from_numpy(cov),  torch.linalg.inv(torch.from_numpy(cov)), logdet_t(torch.from_numpy(cov))))
-
-yo = logdet(cov)
-
-# print(logdet_t(torch.from_numpy(cov)))
-print(torch.tensor(yo))
