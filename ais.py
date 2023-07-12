@@ -77,7 +77,7 @@ def AIS_main(args):
 
     t_start = time.time()
     args.runtime = list()
-    for _ in tqdm(range(args.J)):
+    for j in tqdm(range(args.J)):
 
         if args.algorithm == 'NF-PMC':
             # sampling and weighting
@@ -107,7 +107,10 @@ def AIS_main(args):
                 current_prop, G_mu = vi_adapt(samples, log_w, current_prop, args, G_mu)
 
             elif args.adaptation == 'HMC':
-                current_prop = hmc_adapt(current_prop, args)
+                if j == 0:
+                    current_prop = hmc_adapt(current_prop, args, burnin=True)
+                else:
+                    current_prop = hmc_adapt(current_prop, args)
 
         output.particles.append(samples)
         output.logW.append(log_w)

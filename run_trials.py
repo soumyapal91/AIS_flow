@@ -10,9 +10,9 @@ from ais import *
 parser = argparse.ArgumentParser(description='AIS')
 parser.add_argument('--step_by_step', type=bool, default=False, help='set True, shows final error only if False')
 parser.add_argument('--seed_init', type=int, default=123, help='initial seed')
-parser.add_argument('--num_trials', type=int, default=1, help='no. random trials')
+parser.add_argument('--num_trials', type=int, default=100, help='no. random trials')
 
-parser.add_argument("--example", type=str, default='Logistic', choices=['Gaussian', 'Banana', 'GMM', 'Logistic'])
+parser.add_argument("--example", type=str, default='Logistic', choices=['Gaussian', 'GMM', 'Banana', 'Logistic'])
 parser.add_argument('--dim', type=int, default=200, help='dimension of target distribution')
 parser.add_argument('--sigma_prop', type=float, default=1.0, help='std. dev of proposals, try [1.0, 2.0, 3.0]')
 
@@ -34,8 +34,9 @@ parser.add_argument("--loss", type=str, default='KL', choices=['KL', 'KLrev', 'd
 
 parser.add_argument('--lr_vi', type=float, default=0.5, help='learning rate for VAPIS only, try [0.01, 0.05, 0.1]')
 
-parser.add_argument('--L_hmc', type=int, default=1, help='no. leapfrog steps for HAIS only')
-parser.add_argument('--eps_hmc', type=float, default=0.25, help='step-size of leapfrog for HAIS only]')
+parser.add_argument('--L_hmc', type=int, default=5, help='no. leapfrog steps for HAIS only')
+parser.add_argument('--burn_in', type=int, default=10, help='no. burn_in for HAIS only')
+parser.add_argument('--eps_hmc', type=float, default=0.1, help='step-size of leapfrog for HAIS only]')
 
 args = parser.parse_args()
 
@@ -117,4 +118,3 @@ if __name__ == "__main__":
         elif args.example == 'Logistic':
             print('rMSE of weight estimate: ' + str(err.mse_mu[-1]))
             print('Log-likelihood of test data: ' + str(err.ll_test[-1]))
-

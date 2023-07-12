@@ -144,6 +144,6 @@ class Result:
                 ll_ = np.mean(labels * np.log(prob) + (1 - labels) * np.log(1 - prob), axis=0)[:, None]
                 self.ll_test.append(particle_estimate(ll_, logW_)[0])
 
-            print('Runtime: ' + str(self.runtime))
+            print('Runtime: ' + str(self.runtime[-1]))
             print('rMSE of weight estimate: ' + str(self.mse_mu))
             print('Log-likelihood of test data: ' + str(self.ll_test))
