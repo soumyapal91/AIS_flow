@@ -29,7 +29,7 @@ class CurrentProp:
 def init_params(args):
     random.seed(args.seed)
     np.random.seed(args.seed)
-    if args.algorithm == 'NF-PMC':
+    if args.algorithm == 'NF-PMC' or args.algorithm == 'NF-PMC2':
         torch.manual_seed(args.seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed(args.seed)
@@ -86,10 +86,10 @@ def init_params(args):
 def init_alg(args):
     args.log_target = log_target
 
-    if args.algorithm == 'NF-PMC':
+    if args.algorithm == 'NF-PMC' or args.algorithm == 'NF-PMC2':
         args.log_target_t = log_target_t
 
-    if args.algorithm == 'SL-PMC' or args.algorithm == 'O-PMC':
+    if args.algorithm == 'SL-PMC' or args.algorithm == 'O-PMC' or args.algorithm == 'GRAMIS':
         args.grad_neg_hess_inv_log_target = grad_neg_hess_inv_log_target
 
     if args.algorithm == 'HAIS':

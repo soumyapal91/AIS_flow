@@ -18,7 +18,7 @@ parser.add_argument('--sigma_prop', type=float, default=1.0, help='std. dev of p
 
 parser.add_argument("--weighting", type=str, default='DM', choices=['DM', 'Standard'])
 parser.add_argument("--resampling", type=str, default='local', choices=['local', 'global'])
-parser.add_argument("--adaptation", type=str, default='HMC', choices=['Resample', 'Langevin', 'Newton', 'HMC', 'VAPIS', 'NF'])
+parser.add_argument("--adaptation", type=str, default='HMC', choices=['Resample', 'Langevin', 'Newton', 'GRAMIS', 'HMC', 'VAPIS', 'NF'])
 
 parser.add_argument('--J', type=int, default=50, help='no. iterations')
 parser.add_argument('--K', type=int, default=10, help='no. samples/proposal')
@@ -52,12 +52,16 @@ elif args.adaptation == 'Langevin' and args.resampling == 'local' and args.weigh
     args.algorithm = 'SL-PMC'
 elif args.adaptation == 'Newton' and args.resampling == 'local' and args.weighting == 'DM':
     args.algorithm = 'O-PMC'
+elif args.adaptation == 'GRAMIS' and args.resampling == 'local' and args.weighting == 'DM':
+    args.algorithm = 'GRAMIS'
 elif args.adaptation == 'HMC' and args.resampling == 'local' and args.weighting == 'DM':
     args.algorithm = 'HAIS'
 elif args.adaptation == 'VAPIS' and args.resampling == 'local' and args.weighting == 'DM':
     args.algorithm = 'VAPIS'
-elif args.adaptation == 'NF' and args.resampling == 'local' and args.weighting == 'DM':
+elif args.adaptation == 'NF' and args.resampling == 'local' and args.weighting == 'DM' and args.loss == 'KL':
     args.algorithm = 'NF-PMC'
+elif args.adaptation == 'NF' and args.resampling == 'local' and args.weighting == 'DM' and args.loss == 'div2':
+    args.algorithm = 'NF-PMC2'
 else:
     print('Not valid arguments!!!')
     exit(0)

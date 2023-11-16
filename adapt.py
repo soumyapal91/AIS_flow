@@ -6,6 +6,7 @@ from utils import *
 from utils_torch import *
 from target_dist import *
 from initialization import *
+from scipy.special import gamma
 
 
 def resample_adapt(particles, logW, current_prop, args):
@@ -21,35 +22,6 @@ def resample_adapt(particles, logW, current_prop, args):
             adapted_prop.mean[n, :] = particles[n, indx, :]
 
     return adapted_prop
-
-
-# def langevin_adapt(particles, logW, current_prop, args):
-#     adapted_prop = current_prop
-#
-#     for n in range(args.N):
-#         indx = resample(1, logW[n, :])
-#         starting_point = particles[n, indx, :]
-#         log_pdf_start_ = args.log_target(starting_point, args)
-#         grad_, inv_neg_hess_ = args.grad_neg_hess_inv_log_target(starting_point, args)
-#         shift = np.dot(inv_neg_hess_, grad_)
-#
-#         if np.isnan(shift).any() or np.isinf(shift).any():
-#             adapted_prop.mean[n, :] = starting_point
-#             adapted_prop.cov[:, :, n] = (args.sigma_prop ** 2) * np.eye(args.dim)
-#
-#         else:
-#             step_size = 1.0
-#             while True:
-#                 new_location = starting_point + 0.5 * step_size * shift
-#                 if args.log_target(new_location, args) < log_pdf_start_:
-#                     step_size = step_size / 2
-#                 else:
-#                     break
-#
-#             adapted_prop.mean[n, :] = new_location
-#             adapted_prop.cov[:, :, n] = step_size * inv_neg_hess_
-#
-#     return adapted_prop
 
 
 def langevin_adapt(particles, logW, current_prop, args):
@@ -110,6 +82,41 @@ def newton_adapt(particles, logW, current_prop, args):
                 break
 
         adapted_prop.mean[n, :] = new_location
+        if ill_cond:
+            adapted_prop.cov[:, :, n] = current_prop.cov[:, :, n]
+        else:
+            adapted_prop.cov[:, :, n] = step_size * inv_neg_hess_
+
+    return adapted_prop
+
+
+def gramis_adapt(particles, logW, current_prop, args, epoch):
+    adapted_prop = current_prop
+
+    for n in range(args.N):
+        ill_cond = False
+        starting_point = current_prop.mean[n, :]
+        log_pdf_start_ = args.log_target(starting_point, args)
+        grad_, inv_neg_hess_ = args.grad_neg_hess_inv_log_target(starting_point, args)
+
+        shift = np.dot(inv_neg_hess_, grad_)
+
+        if np.isnan(shift).any() or np.isinf(shift).any():
+            shift = np.dot(current_prop.cov[:, :, n], grad_)
+            ill_cond = True
+
+        step_size = 1.0
+        while True:
+            new_location = starting_point + step_size * shift
+            if args.log_target(new_location, args) < log_pdf_start_:
+                step_size = step_size / 2
+            else:
+                break
+
+        distances = current_prop.mean[n, :] - current_prop.mean
+        distances = distances / (np.sqrt(np.sum(distances ** 2, axis=1)) + 1e-6).reshape(-1, 1)
+
+        adapted_prop.mean[n, :] = new_location + (0.99 ** epoch) * step_size * distances.mean(axis=0)
         if ill_cond:
             adapted_prop.cov[:, :, n] = current_prop.cov[:, :, n]
         else:
@@ -204,6 +211,4 @@ def leapfrog(xp, args, M, L, step_size, burnin):
             xp_current = xp.copy()
 
         return xp_current
-
-
 

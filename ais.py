@@ -16,7 +16,7 @@ class Output:
         self.particles = list()
         self.logW = list()
 
-        if args.algorithm == 'NF-PMC':
+        if args.algorithm == 'NF-PMC' or args.algorithm == 'NF-PMC2':
             self.nf_model = NormalizingFlowModel(args, current_prop)
             self.optimizer = torch.optim.RMSprop(self.nf_model.parameters(), lr=args.lr_nf, alpha=0.9, eps=1e-8)
             self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=args.step_nf, gamma=args.gamma)
@@ -79,7 +79,7 @@ def AIS_main(args):
     args.runtime = list()
     for j in tqdm(range(args.J)):
 
-        if args.algorithm == 'NF-PMC':
+        if args.algorithm == 'NF-PMC' or args.algorithm == 'NF-PMC2':
             # sampling and weighting
             samples, log_target_, log_proposal_ = output.sample_n_weight_nf(args)
 
@@ -102,6 +102,9 @@ def AIS_main(args):
 
             elif args.adaptation == 'Newton':
                 current_prop = newton_adapt(samples, log_w, current_prop, args)
+
+            elif args.adaptation == 'GRAMIS':
+                current_prop = gramis_adapt(samples, log_w, current_prop, args, j)
 
             elif args.adaptation == 'VAPIS':
                 current_prop, G_mu = vi_adapt(samples, log_w, current_prop, args, G_mu)

@@ -1,15 +1,8 @@
 import numpy as np
 import pickle as pk
 import pandas as pd
-import random, scipy
-# from scipy.stats import bootstrap
-import time
-import matplotlib.pyplot as plt
-# import seaborn as sns
 
-example = 'GMM'
 dim = 200
-
 num_trials = 100
 
 J = 50
@@ -18,51 +11,54 @@ K = 10
 
 learn_var = False
 
-algs = ['GR-PMC', 'LR-PMC', 'SL-PMC', 'O-PMC', 'HAIS', 'VAPIS', 'NF-PMC']
-sigma_prop = 1.0  # 1.0/2.0/3.0
+algs = ['PMC', 'GR-PMC', 'LR-PMC', 'SL-PMC', 'O-PMC', 'GRAMIS', 'HAIS', 'VAPIS', 'NF-PMC']
 
-metric_ = 'MSE'  #'LL'
+examples = ['GMM', 'Logistic']
+sigma_props = [1.0, 2.0, 3.0]
+metrics_ = [['MSE'], ['MSE', 'LL']]
 
-legend_all = []
+for example_idx, example in enumerate(examples):
+    for sigma_prop in sigma_props:
+        for metric_ in metrics_[example_idx]:
+            print('Example :', example, ' , sigma_prop : ', sigma_prop, ' , Metric :', metric_)
+            df = pd.DataFrame()
 
-fig, ax = plt.subplots()
-pp = []
+            for alg in algs:
 
-df = pd.DataFrame()
+                try:
+                    if alg != 'PMC':
+                        filename = "results/{}/{}_dim={}_sigma_prop={}_ntrial={}_J={}_N={}_K={}_learn_var={}.pk".format(example,
+                              alg, dim, sigma_prop, num_trials, J, N, K, learn_var)
+                    else:
+                        filename = "results/{}/{}_dim={}_sigma_prop={}_ntrial={}_J={}_N={}_K={}_learn_var={}.pk".format(example,
+                              alg, dim, sigma_prop, num_trials, J*K, N, 1, learn_var)
 
-for alg in algs:
+                    errors = pk.load(open(filename, "rb"))
 
-    filename = "results/{}/{}_dim={}_sigma_prop={}_ntrial={}_J={}_N={}_K={}_learn_var={}.pk".format(example,
-          alg, dim, sigma_prop, num_trials, J, N, K, learn_var)
+                    metric = []
+                    runtime = []
+                    for err in errors:
+                        runtime.append(err.runtime[-1] - err.runtime[-2])
+                        if metric_ == 'MSE':
+                            metric.append(err.mse_mu[-1])
+                        else:
+                            metric.append(err.ll_test[-1])
 
-    errors = pk.load(open(filename, "rb"))
+                    runtime = np.array(runtime)
+                    metric = np.squeeze(np.array(metric))
+                    print('----------------------------')
+                    print(alg)
+                    print(metric_ + ': &{0:.2f}'. format(np.mean(metric)) + '$\pm$' + '{0:.2f}'. format(np.std(metric)) + ' ')
+                    print('Runtime' + ': &{0:.2f} sec./iter.'. format(np.mean(runtime)))
 
-    metric = []
-    runtime = []
-    for err in errors:
-        runtime.append(err.runtime[-1] - err.runtime[-2])
-        if metric_ == 'MSE':
-            metric.append(err.mse_mu[-1])
-        else:
-            metric.append(err.ll_test[-1])
+                    df_ = pd.DataFrame(metric, columns=[alg])
+                    df = pd.concat([df, df_], axis=1)
 
-    runtime = np.array(runtime)
-    metric = np.squeeze(np.array(metric))
-    print('----------------------------')
-    print(alg)
-    print(metric_ + ': &{0:.2f}'. format(np.mean(metric)) + '$\pm$' + '{0:.2f}'. format(np.std(metric)) + ' ')
-    print('Runtime' + ': &{0:.2f} sec./iter.'. format(np.mean(runtime)))
+                except:
+                    pass
 
-    df_ = pd.DataFrame(metric, columns=[alg])
-    df = pd.concat([df, df_], axis=1)
-
-print('----------------------------')
-print(df.mean(axis=0))
-df.to_csv("{}_sigma_prop={}_metric={}.csv".format(example, sigma_prop, metric_), index=False)
-#
-# for alg in algs:
-#     data = df[alg]
-#     print(data)
-
+            print('----------------------------')
+            print(df.mean(axis=0))
+            df.to_csv("{}_sigma_prop={}_metric={}.csv".format(example, sigma_prop, metric_), index=False)
 
 
