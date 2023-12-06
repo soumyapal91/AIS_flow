@@ -7,9 +7,10 @@ This is an implementation of the methodology in "Population Monte Carlo} with No
 &nbsp;
 
 ---
-## To reproduce the results in the paper 
+## To reproduce the results in the paper: choose 'example' and 'sigma_prop' for running different experiments with different settings 
 
-1. PMC: 
+1. PMC: python run_trials.py --num_trials 100 --example 'GMM'/'Logistic' --sigma_prop 1.0/2.0/3.0 --adaptation'Resample' --resampling 'global' --weighting 'Standard'
+
 2. 
 3. 
 
