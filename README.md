@@ -7,13 +7,47 @@ This is an implementation of the methodology in "Population Monte Carlo} with No
 &nbsp;
 
 ---
-## To reproduce the results in the paper: choose 'example' and 'sigma_prop' for running different experiments with different settings 
+## To reproduce the results in the paper: choose 'example' and 'sigma_prop' for running different experiments with different settings, refer to our paper for the citations of the baseline algorithms 
 
-1. PMC: python run_trials.py --num_trials 100 --example 'GMM'/'Logistic' --sigma_prop 1.0/2.0/3.0 --adaptation'Resample' --resampling 'global' --weighting 'Standard'
+1. PMC: python run_trials.py --num_trials 100 --example 'GMM'/'Logistic' --sigma_prop 1.0/2.0/3.0 --adaptation 'Resample'
+        --resampling 'global' --weighting 'Standard'
+   
+2. GR-PMC: python run_trials.py --num_trials 100 --example 'GMM'/'Logistic' --sigma_prop 1.0/2.0/3.0 --adaptation 'Resample' 
+           --resampling 'global' --weighting 'DM'
+   
+3. LR-PMC: python run_trials.py --num_trials 100 --example 'GMM'/'Logistic' --sigma_prop 1.0/2.0/3.0 --adaptation 'Resample' 
+           --resampling 'local' --weighting 'DM'
+   
+4. SL-PMC: python run_trials.py --num_trials 100 --example 'GMM'/'Logistic' --sigma_prop 1.0/2.0/3.0 --adaptation 'Langevin' 
+           --resampling 'local' --weighting 'DM'
+   
+5. O-PMC: python run_trials.py --num_trials 100 --example 'GMM'/'Logistic' --sigma_prop 1.0/2.0/3.0 --adaptation 'Newton'
+          --resampling 'local' --weighting 'DM'
+   
+6. GRAMIS: python run_trials.py --num_trials 100 --example 'GMM'/'Logistic' --sigma_prop 1.0/2.0/3.0 --adaptation 'GRAMIS'
+           --resampling 'local' --weighting 'DM'
+   
+7. HAIS: python run_trials.py --num_trials 100 --example 'GMM' --sigma_prop 1.0/2.0/3.0 --adaptation 'HMC' --resampling 
+         'local' --weighting 'DM' --L_hmc 50 --eps_hmc 0.005
 
-2. 
-3. 
+         python run_trials.py --num_trials 100 --example 'Logistic' --sigma_prop 1.0/2.0/3.0 --adaptation 'HMC' --resampling 
+         'local' --weighting 'DM' --L_hmc 50 --eps_hmc 0.05
 
+ 8. VAPIS: python run_trials.py --num_trials 100 --example 'GMM' --sigma_prop 1.0/2.0/3.0 --adaptation 'VAPIS' --resampling 
+           'local' --weighting 'DM' --lr_vi 0.25
+
+           python run_trials.py --num_trials 100 --example 'Logistic' --sigma_prop 1.0/2.0/3.0 --adaptation 'VAPIS' -- 
+           resampling  'local' --weighting 'DM' --lr_vi 0.5
+
+  9. NF-PMC (ours): python run_trials.py --num_trials 100 --example 'GMM' --sigma_prop 1.0/2.0/3.0 --adaptation 'NF' --                          resampling 'local' --weighting 'DM' --lr_nf 0.005 --step_nf 25 --gamma 0.1
+
+                    python run_trials.py --num_trials 100 --example 'Logistic' --sigma_prop 1.0/2.0/3.0 --adaptation 'NF' --                     resampling 'local' --weighting 'DM' --lr_nf 0.05 --step_nf 25 --gamma 0.1
+
+
+ ## Calculation of the performance metrics:
+
+ Run python calculate_error.py
+   
 &nbsp;
 
 Then the results will be saved in the ```./results```.
