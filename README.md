@@ -40,11 +40,11 @@ This is an implementation of the methodology in "Population Monte Carlo with Nor
 12. NF-PMC (Logistic) (ours): python run_trials.py --num_trials 100 --example 'Logistic' --sigma_prop 1.0/2.0/3.0 --        
                               adaptation 'NF' --resampling 'local' --weighting 'DM' --lr_nf 0.05 --step_nf 25 --gamma 0.1
 
-&nbsp
+&nbsp;
 
 Then the results will be saved in the ```./results```.
 
-& nbsp
+&nbsp;
 
 ## Calculation of the performance metrics:
 
