@@ -65,7 +65,7 @@ Please cite our paper if you use this code in your own work:
 
 ```
 @article{pal2023, 
-author={S. Pal and A. Valkanas and and M. Coates}, 
+author={S. Pal and A. Valkanas and M. Coates}, 
 journal={IEEE Sig. Process. Lett.}, 
 title={{Population Monte Carlo} with Normalizing Flow},
 month={},
