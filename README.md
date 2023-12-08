@@ -1,6 +1,6 @@
 # Population Monte Carlo with Normalizing Flow
 
-This is an implementation of the methodology in "Population Monte Carlo with Normalizing Flow". The arXiv version is available at [https://arxiv.org/pdf/2106.06064.pdf](https://arxiv.org/pdf/2106.06064.pdf)
+This is an implementation of the methodology in "Population Monte Carlo with Normalizing Flow". The arXiv version is available at [https://arxiv.org/pdf/2312.03857.pdf](https://arxiv.org/pdf/2312.03857.pdf)
 
 &nbsp;
 &nbsp;
@@ -63,7 +63,7 @@ See ```requirements.txt```
 
 ## Cite
 
-Please cite our paper if you use this code in your own work:
+Please cite our paper if you use this code in your work:
 
 ```
 @article{pal2023, 
